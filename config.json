@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "seven_zip_path": "D:\\hardware\\7-Zip\\7z.exe",
+  "extraction_output_root": "",
+  "scan_extensions": [".zip", ".rar", ".7z"],
+  "create_same_name_subfolder": true,
+  "delete_original_after_success": false,
+  "confirm_before_delete": true,
+  "password_module_enabled": false,
+  "vault_path": "~/.archive_password_vault",
+  "move_unsolved_to_subfolder": true,
+  "unsolved_subfolder_name": "password_protected_unsolved",
+  "unsolved_location": "output_root",
+  "max_threads": 1,
+  "theme": "dark",
+  "log_level": "INFO",
+  "ui": {
+    "window_geometry": null
+  }
+}

@@ -1,0 +1,6 @@
+# GUI framework (already installed in this environment)
+PyQt6>=6.5
+
+# Optional: send original archives to the Recycle Bin on Windows
+# instead of permanent deletion. Falls back to Path.unlink if absent.
+send2trash>=1.8
