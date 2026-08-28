@@ -26,7 +26,7 @@
                 │ subprocess / 文件 I/O
 ┌───────────────▼─────────────────────────────┐
 │  外部依赖                                   │
-│  7z.exe (D:\hardware\7-Zip)  ·  Git        │
+│  7z.exe (C:\Program Files\7-Zip)  ·  Git  │
 │  ~/.archive_password_vault (独立 Git 仓库) │
 └─────────────────────────────────────────────┘
 ```

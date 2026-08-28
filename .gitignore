@@ -58,3 +58,6 @@ desktop.ini
 
 # Plan / agent internal docs (not part of shipped project)
 .trae/
+
+# PyInstaller build artifacts
+*.spec

@@ -11,8 +11,8 @@ APP_NAME = "Archive Auto-Extractor"
 APP_VERSION = "1.0.0"
 
 # 7-Zip -----------------------------------------------------------------------
-# Default location verified on this machine; user may override in settings.
-SEVEN_ZIP_DEFAULT = r"D:\hardware\7-Zip\7z.exe"
+# Standard Windows install location; user may override in settings.
+SEVEN_ZIP_DEFAULT = r"C:\Program Files\7-Zip\7z.exe"
 
 # Password vault -------------------------------------------------------------
 # Stored OUTSIDE the project folder (requirement 11) in the user's home dir.

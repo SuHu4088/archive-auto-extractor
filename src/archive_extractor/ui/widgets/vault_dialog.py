@@ -11,10 +11,12 @@ to the vault Git repo with a descriptive message.
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QDialog,
+    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -25,6 +27,7 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
 
 from ...core.password_manager import PasswordVault
@@ -67,18 +70,36 @@ class VaultDialog(QDialog):
         add_row.addWidget(self.add_btn)
         root.addLayout(add_row)
 
+        # Import row -------------------------------------------------------
+        import_row = QHBoxLayout()
+        import_row.addWidget(QLabel("批量导入:"))
+        self.import_file_btn = QPushButton("从 TXT 文件")
+        self.import_file_btn.setToolTip("从文本文件导入密码，每行一个")
+        self.import_file_btn.clicked.connect(self._import_from_file)
+        self.import_clipboard_btn = QPushButton("从剪切板")
+        self.import_clipboard_btn.setToolTip("从剪切板文本导入密码，每行一个")
+        self.import_clipboard_btn.clicked.connect(self._import_from_clipboard)
+        self.import_input_btn = QPushButton("手动输入")
+        self.import_input_btn.setToolTip("在多行文本框中输入密码，每行一个")
+        self.import_input_btn.clicked.connect(self._import_from_input)
+        import_row.addWidget(self.import_file_btn)
+        import_row.addWidget(self.import_clipboard_btn)
+        import_row.addWidget(self.import_input_btn)
+        import_row.addStretch(1)
+        root.addLayout(import_row)
+
         # Table ------------------------------------------------------------
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
             ["标签", "密码", "启用", "使用次数", "上次使用", "操作"]
         )
         self.table.verticalHeader().setVisible(False)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         for c in range(2, 6):
-            self.table.horizontalHeader().setSectionResizeMode(c, QHeaderView.ResizeToContents)
+            self.table.horizontalHeader().setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         root.addWidget(self.table, stretch=1)
 
         # Action row -------------------------------------------------------
@@ -162,6 +183,82 @@ class VaultDialog(QDialog):
         self.value_edit.clear()
         self._refresh()
 
+    # -- bulk import -------------------------------------------------------
+    @staticmethod
+    def _parse_lines(text: str) -> list[str]:
+        """Split text into non-empty password lines (whitespace stripped)."""
+        result: list[str] = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped:
+                result.append(stripped)
+        return result
+
+    def _show_import_result(self, added: int, skipped: int) -> None:
+        if added == 0 and skipped == 0:
+            QMessageBox.information(self, "导入", "没有可导入的密码。")
+        elif skipped > 0:
+            QMessageBox.information(
+                self, "导入完成",
+                f"成功导入 {added} 个密码。\n跳过 {skipped} 个（重复或空行）。",
+            )
+        else:
+            QMessageBox.information(self, "导入完成", f"成功导入 {added} 个密码。")
+        if added > 0:
+            self._refresh()
+
+    def _import_from_file(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择密码文件",
+            "",
+            "文本文件 (*.txt);;所有文件 (*.*)",
+        )
+        if not path:
+            return
+        try:
+            # Try UTF-8 first, fall back to system encoding.
+            try:
+                text = open(path, "r", encoding="utf-8").read()
+            except UnicodeDecodeError:
+                text = open(path, "r", encoding="gbk", errors="replace").read()
+        except OSError as exc:
+            QMessageBox.warning(self, "导入失败", f"无法读取文件：\n{exc}")
+            return
+        passwords = self._parse_lines(text)
+        if not passwords:
+            QMessageBox.information(self, "导入", "文件中没有可导入的密码。")
+            return
+        added, skipped = self.vault.bulk_add_passwords(passwords)
+        self._show_import_result(added, skipped)
+
+    def _import_from_clipboard(self) -> None:
+        clipboard = QGuiApplication.clipboard()
+        text = clipboard.text()
+        if not text.strip():
+            QMessageBox.information(self, "导入", "剪切板为空。")
+            return
+        passwords = self._parse_lines(text)
+        if not passwords:
+            QMessageBox.information(self, "导入", "剪切板中没有可导入的密码。")
+            return
+        added, skipped = self.vault.bulk_add_passwords(passwords)
+        self._show_import_result(added, skipped)
+
+    def _import_from_input(self) -> None:
+        dlg = _BulkImportDialog(self)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        passwords = dlg.get_passwords()
+        if not passwords:
+            QMessageBox.information(self, "导入", "没有输入密码。")
+            return
+        label_prefix = dlg.get_label_prefix()
+        added, skipped = self.vault.bulk_add_passwords(
+            passwords, label_prefix=label_prefix
+        )
+        self._show_import_result(added, skipped)
+
     def _edit(self, entry_id: str) -> None:
         entries = self.vault.list_entries(enabled_only=False)
         entry = next((e for e in entries if e.id == entry_id), None)
@@ -212,3 +309,58 @@ class VaultDialog(QDialog):
             if current and current.enabled != desired:
                 self.vault.set_enabled(entry_id, desired)
         super().closeEvent(event)
+
+
+class _BulkImportDialog(QDialog):
+    """Modal dialog for pasting many passwords (one per line)."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("批量导入密码")
+        self.resize(520, 420)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
+
+        hint = QLabel("每行一个密码，空行将被忽略：")
+        hint.setProperty("muted", True)
+        layout.addWidget(hint)
+
+        self.text_edit = QTextEdit()
+        self.text_edit.setPlaceholderText("password1\npassword2\npassword3\n…")
+        self.text_edit.setFocus()
+        layout.addWidget(self.text_edit, stretch=1)
+
+        label_row = QHBoxLayout()
+        label_row.addWidget(QLabel("标签前缀（可选）:"))
+        self.label_prefix_edit = QLineEdit()
+        self.label_prefix_edit.setPlaceholderText(
+            "如填“导入”将生成 导入-1, 导入-2, …；留空则自动从密码生成标签"
+        )
+        label_row.addWidget(self.label_prefix_edit, 1)
+        layout.addLayout(label_row)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch(1)
+        cancel_btn = QPushButton("取消")
+        cancel_btn.clicked.connect(self.reject)
+        ok_btn = QPushButton("导入")
+        ok_btn.setProperty("primary", True)
+        ok_btn.setDefault(True)
+        ok_btn.clicked.connect(self.accept)
+        btn_row.addWidget(cancel_btn)
+        btn_row.addWidget(ok_btn)
+        layout.addLayout(btn_row)
+
+    def get_passwords(self) -> list[str]:
+        """Return stripped non-empty lines from the text edit."""
+        text = self.text_edit.toPlainText()
+        result: list[str] = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped:
+                result.append(stripped)
+        return result
+
+    def get_label_prefix(self) -> str:
+        return self.label_prefix_edit.text().strip()

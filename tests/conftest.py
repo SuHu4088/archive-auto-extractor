@@ -1,6 +1,7 @@
 """Pytest fixtures: build a temp dir with sample archives via 7z.exe."""
 from __future__ import annotations
 
+import os
 import subprocess
 import zipfile
 from pathlib import Path
@@ -26,13 +27,19 @@ def _run_7z(args: list[str]) -> None:
 
 @pytest.fixture
 def settings() -> Settings:
-    return Settings()
+    s = Settings()
+    env_path = os.environ.get("SEVEN_ZIP_PATH")
+    if env_path:
+        s.seven_zip_path = env_path
+    return s
 
 
 @pytest.fixture
 def seven_zip(settings: Settings) -> Path:
-    sz = settings.seven_zip
-    assert sz.exists(), f"7z.exe not found at {sz}; install 7-Zip to run tests"
+    # Allow overriding the 7z path via env var for CI / non-standard installs.
+    env_path = os.environ.get("SEVEN_ZIP_PATH")
+    sz = Path(env_path) if env_path else settings.seven_zip
+    assert sz.exists(), f"7z.exe not found at {sz}; install 7-Zip or set SEVEN_ZIP_PATH"
     return sz
 
 

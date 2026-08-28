@@ -3,12 +3,16 @@
 The settings live in ``config.json`` next to ``run.py``. User-specific paths
 may be stored in ``config.local.json`` (git-ignored) which overrides the
 tracked defaults — this keeps secrets / machine-specific paths out of Git.
+
+When packaged with PyInstaller (frozen), config is read/written next to the
+EXE so user changes persist, and the bundled 7z.exe is used automatically.
 """
 from __future__ import annotations
 
 import json
 import logging
 import os
+import sys
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
@@ -17,9 +21,21 @@ from .constants import SEVEN_ZIP_DEFAULT, SUPPORTED_EXT, UNSOLVED_SUBFOLDER
 
 log = logging.getLogger(__name__)
 
+
+def _is_frozen() -> bool:
+    """True when running as a PyInstaller bundle."""
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
 # Config files ---------------------------------------------------------------
-_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.json"
-_LOCAL_CONFIG_PATH = _CONFIG_PATH.parent / "config.local.json"
+if _is_frozen():
+    # Read/write config next to the EXE so user changes persist.
+    _CONFIG_DIR = Path(sys.executable).resolve().parent
+else:
+    _CONFIG_DIR = Path(__file__).resolve().parents[2]
+
+_CONFIG_PATH = _CONFIG_DIR / "config.json"
+_LOCAL_CONFIG_PATH = _CONFIG_DIR / "config.local.json"
 
 
 @dataclass
@@ -56,6 +72,10 @@ class Settings:
     @property
     def seven_zip(self) -> Path:
         """Resolved, expanded path to ``7z.exe``."""
+        if _is_frozen():
+            bundled = Path(sys._MEIPASS) / "7z.exe"
+            if bundled.exists():
+                return bundled
         return Path(os.path.expandvars(self.seven_zip_path)).expanduser()
 
     @property

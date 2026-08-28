@@ -140,6 +140,54 @@ class PasswordVault:
                     return updated
         return None
 
+    def bulk_add_passwords(
+        self,
+        passwords: list[str],
+        label_prefix: str = "",
+        skip_duplicates: bool = True,
+    ) -> tuple[int, int]:
+        """Add many passwords in a single write + commit.
+
+        Each entry in *passwords* is one password string (already stripped of
+        surrounding whitespace by the caller). Empty strings are skipped.
+
+        When *skip_duplicates* is ``True`` (default), passwords that already
+        exist in the vault — or that appear earlier in the same batch — are
+        counted as skipped rather than added.
+
+        Returns ``(added_count, skipped_count)``.
+        """
+        added = 0
+        skipped = 0
+        with self._lock:
+            data = self._read_locked()
+            pw_list = data.setdefault("passwords", [])
+            existing_values = {d.get("value", "") for d in pw_list}
+            seen_in_batch: set[str] = set()
+
+            for idx, pw in enumerate(passwords, 1):
+                if not pw or not pw.strip():
+                    skipped += 1
+                    continue
+                if skip_duplicates and (pw in existing_values or pw in seen_in_batch):
+                    skipped += 1
+                    continue
+                label = f"{label_prefix}-{idx}" if label_prefix else ""
+                entry = VaultEntry.new(value=pw, label=label)
+                pw_list.append(entry.to_dict())
+                existing_values.add(pw)
+                seen_in_batch.add(pw)
+                added += 1
+
+            if added > 0:
+                commit_msg = (
+                    f"Bulk import: +{added} password(s)"
+                    + (f", skipped {skipped}" if skipped else "")
+                )
+                self._write_locked(data, commit_msg)
+        log.info("bulk import: added %d, skipped %d", added, skipped)
+        return added, skipped
+
     def set_enabled(self, entry_id: str, enabled: bool) -> bool:
         with self._lock:
             data = self._read_locked()

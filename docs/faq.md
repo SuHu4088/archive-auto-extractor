@@ -3,7 +3,7 @@
 ## 安装与运行
 
 ### Q: 启动时报「7z.exe not found」
-A: 7-Zip 未安装或路径不符。打开「工具 → 设置」，在「7z.exe 路径」选择正确的 `7z.exe`。默认路径 `D:\hardware\7-Zip\7z.exe`，可从 [7-zip.org](https://7-zip.org) 下载安装。
+A: 7-Zip 未安装或路径不符。打开「工具 → 设置」，在「7z.exe 路径」选择正确的 `7z.exe`。默认路径为 `C:\Program Files\7-Zip\7z.exe`（标准安装位置），可从 [7-zip.org](https://7-zip.org) 下载安装。
 
 ### Q: 启动时报缺少 PyQt6
 A: 运行 `pip install -r requirements.txt`，或单独 `pip install PyQt6`。本机已预装，新环境需手动安装。

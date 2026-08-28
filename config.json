@@ -1,8 +1,12 @@
 {
   "version": 1,
-  "seven_zip_path": "D:\\hardware\\7-Zip\\7z.exe",
+  "seven_zip_path": "C:\\Program Files\\7-Zip\\7z.exe",
   "extraction_output_root": "",
-  "scan_extensions": [".zip", ".rar", ".7z"],
+  "scan_extensions": [
+    ".zip",
+    ".rar",
+    ".7z"
+  ],
   "create_same_name_subfolder": true,
   "delete_original_after_success": false,
   "confirm_before_delete": true,

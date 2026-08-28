@@ -1,6 +1,7 @@
 """pipeline tests: end-to-end scenarios per archive."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from archive_extractor.config import Settings
@@ -28,6 +29,9 @@ class _Cb:
 
 def _settings(tmp_path: Path, module_on: bool) -> Settings:
     s = Settings()
+    env_path = os.environ.get("SEVEN_ZIP_PATH")
+    if env_path:
+        s.seven_zip_path = env_path
     s.extraction_output_root = str(tmp_path / "out")
     s.password_module_enabled = module_on
     s.delete_original_after_success = False

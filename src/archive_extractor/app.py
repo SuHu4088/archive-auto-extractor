@@ -7,6 +7,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 from .ui.main_window import MainWindow
+from .ui.qt_compat import apply_compat
 from .ui.theme import QSS, apply_dark_palette
 from .utils.logger import setup_logging
 
@@ -19,6 +20,8 @@ def main() -> int:
 
     app = QApplication(sys.argv)
     app.setApplicationName("Archive Auto-Extractor")
+    # PyQt6 cross-version enum aliases — must run before any widget creation.
+    apply_compat()
     apply_dark_palette(app)
     app.setStyleSheet(QSS)
 
