@@ -1,5 +1,8 @@
 # 密码识别并自动解压缩 · Archive Auto-Extractor
 
+> **本仓库已并入 folder-ops，后续维护请前往 https://github.com/SuHu4088/folder-ops**
+
+
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/GUI-PyQt6-green.svg)](https://www.riverbankcomputing.com/software/pyqt/)
 [![7-Zip](https://img.shields.io/badge/Engine-7--Zip-orange.svg)](https://7-zip.org/)
